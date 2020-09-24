@@ -1,25 +1,28 @@
 ---
-title: "Data621 Project01"
+title: |
+    | Data 621 Project 01 
+    | Section 01 Group 5
 author: "Farhana Zahir, Habib Khan, Vijaya Cherukuri, Scott Reed, Shovon Biswas"
-date: "9/16/2020"
+date: "9/22/2020"
 output:
   html_document:
+    code_folding: 'hide'
+    df_print: paged
     toc: yes
     toc_float: yes
-    code_folding: show
   pdf_document:
-    toc: yes
+    df_print: tibble
+    toc: true
+    toc_depth: 3
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 
 
-## Data Exploration
 
-***Read in the data and packages***
+
+\newpage
+
 
 ```{r, message=FALSE,warning=FALSE, include=F, echo=F}
 # loading libraries
@@ -57,8 +60,8 @@ Our objective is to build a multiple linear regression model on the training dat
 A short description of the variables and their theoretical effect on the response variable 'Number of wins' is provided.
 
 
-```{r message=FALSE, echo=F, out.width='70%', fig.show='hold'}
-#knitr::include_graphics('variable summary.png')
+```{r message=FALSE, echo=F, out.width='90%', fig.show='hold'}
+knitr::include_graphics('variable summary.png')
 ```
 
 ```{r message=FALSE, output=F, echo=F, warning=FALSE}
@@ -79,12 +82,17 @@ names(test) <- name_list
 
 ```
 
-## Data cleanup and remediation
+\newpage
+## Data exploration
 
 Looking at the data it is clear that all of the data is numeric, and that Hit By Pitch has a lot of missing variables. 
 
+```{r echo=F}
+summary(train)
+```
 
-6 of the variables have above 4% missing values:
+
+6 of the variables have missing values:
 
 • BATTING_SO: 102 (4.5% of total)
 
@@ -96,17 +104,19 @@ Looking at the data it is clear that all of the data is numeric, and that Hit By
 
 • BATTING_HBP: 2085 (92% of total, exclude from analysis?)
 
-
 • FIELDING_DP: 286 (12.6% of total,needs to be looked at closely, impute or exclude?)
 
+The following diagram shows the missingness pattern by variables.
 
 ```{r message=F, warning=F, echo=F, results=F}
 #Plot missing values using library VIM
 mice_plot <- aggr(train, col=c('navyblue','red'),numbers=TRUE, sortVars=TRUE,labels=names(train), cex.axis=.7,gap=3, ylab=c("Missing data","Pattern"))
 ```
 
-
+\newpage
 ### Outliers
+
+The following diagram shows the outliers for all the variables, both dependent and independent.
 
 ```{r, fig.width=10, fig.height= 9, echo=F, warning=F}
 ggplot(stack(train[,-1]), aes(x=ind, y = values, fill=ind)) + 
@@ -134,7 +144,7 @@ train %>%
 
 There are positive or negative correlations among the predictors. A small number of values are not correlated. Let us look at the numerical correlations with the response variable. We see that the predictors Batting_H, Batting_HR, Batting_BB, Pitching_H, and Pitching_HR are more correlated and should be included in our regression. 
 
-```{r}
+```{r message=FALSE, echo=F, warning=F}
 correlation <- train %>% 
   cor(., use = "complete.obs") %>%
   as.data.frame() %>%
@@ -155,7 +165,8 @@ correlation %>%
   kable_styling()
 ```
 
-Examining significant correlations among the independent variables, we see that four of the pairs have a correlation close to 1. This can lead to autocorrelation errors in our analysis.
+Examining significant correlations among the independent variables, we see that four of the pairs have a correlation close to 1. This can lead to multicollinearity issues in our analysis.
+
 
 ## Data Preparation
 ```{r message=F,echo=F, warning=F, results=F}
@@ -174,7 +185,7 @@ train<-train%>%
    filter(rowsum<5)%>%
    select(-rowsum)
 ```
-We will look at the patterns and intersections of missing data among the variables. We can see that only 22 of the observations have all 5 variables missing, we will exclude these cases. Overall, the pattern suggests that the variables are Missing at Random (MAR)
+We will look at the patterns and intersections of missing data among the variables. We can see that only 22 of the observations have all 5 variables missing, so we are completely removing these observations. Overall, the pattern suggests that the variables are Missing at Random (MAR)
 
 In deciding whether data is MCAR (Missing Completely At Random) or MAR, one approach is to explore patterns of missingness between variables. This is particularly important for a primary outcome measure/dependent variable. We will test the two cases with most missing values.
 
@@ -189,6 +200,11 @@ train %>%
 ```
 
 
+
+The wins for teams whose Caught Stealing (Baserun_cs) data is known is the blue box plot, and the wins with missing Baserun_cs data is the gray box plot. We do not see a lot of difference in the mean, but the Interquartile range has changed. Also the mean changes significantly between Double Play (Fielding_DP) and Baserun_cs if we do not include missing data. 
+
+102 of the observations have 3 of the variables missing.The highest case missing is in the BASERUN_CS variable, so this deserves an analysis of its own.We find a highly positively skewed distribution with most missing data after the 125 on the x axis. We want to make sure that the shape of our distribution does not change as we impute the data.
+
 ```{r echo=F, warning=F, results=F}
 train %>% 
   ggplot(aes(BASERUN_CS)) + 
@@ -201,10 +217,8 @@ train %>%
        caption = "* Red line is the mean value and green is the median")
 ```
 
-The wins for teams whose Caught Stealing (Baserun_cs) data is known is the blue box plot, and the wins with missing Baserun_cs data is the gray box plot. We do not see a lot of difference in the mean, but the Interquartile range has changed. Also the mean changes significantly between Double Play (Fielding_DP) and Baserun_cs if we do not include missing data. 
-102 of the observations have 3 of the variables missing.The highest case missing is in the BASERUN_CS variable, so this deserves an analysis of its own.We find a highly positively skewed distribution with most missing data after the 125 on the x axis. We want to make sure that the shape of our distribution does not change as we impute the data.
 
-
+\newpage
 
 ```{r, message=FALSE, output=F, echo=F, warning=FALSE}
 train <- read_csv('https://raw.githubusercontent.com/habibkhan89/Data621/master/Homework%201/moneyball-training-data.csv', col_names = TRUE)[,-1] 
@@ -217,7 +231,8 @@ colnames(test) <- gsub("TEAM_", "", colnames(test))
 ```
 
 
-## Modeling
+
+## Data Preparation for Modeling
 
 ### Model 1 - Basic Model
 
@@ -324,7 +339,7 @@ sapply(train_bx_transformed, function(x) skewness(x))
 
 In model 4, we are going to replace the missing values with kNN using the Caret R package. We decided to remove Hit By Pitcher and Caught Stealing as they had 92% and 33% missing values respectively. We want to see if kNN Imputation along with other selected variables might give better results. After imputation, we used log transformation with the kNN imputed values to see if it will improve the model's fitness. Again for consistency, we have to apply all transformation on both training and datasets 
 
-#### kNN Imputation
+*kNN Imputation*
 
 As it may be unfamiliar to some, kNN is a method of building a model to impute data. While in theory a more sophisticated model could be used, kNN has some advantages in being simple and well understood. 
 
@@ -347,8 +362,8 @@ test_knn <- kNN(test_data_knn, variable = c("BATTING_SO", "BASERUN_SB", "PITCHIN
 colSums(is.na(train_knn))
 
 # Log transformation on knn imputed dataset
-train_knn_log <- train_data_knn # Model 2
-test_knn_log <- test_data_knn
+train_knn_log <- train_knn # Model 2
+test_knn_log <- test_knn
 #test_log <- test2
 
 # Applying log transformation for highly skewed variables
@@ -370,6 +385,7 @@ ggplot(melt(train_knn_log), aes(x=value))+geom_density()+facet_wrap(~variable, s
 ```
 
 
+\newpage
 ## Build Models
 
 ### Model 0 ... a Sanity check
@@ -391,7 +407,7 @@ $$
 TARGET_WINS = 19.02 + BATTING_H(0.04) - BATTING_2B(0.02) + BATTING_3B(0.07) + BATTING_HR(0.09) + BASERUN_SB(0.03) + PITCHING_H(0.01) + PITCHING_BB(0.01) - FIELDING_E (0.03) - FIELDING_DP(0.11)
 $$
 
-### Model 1 
+### Model 1 Basic Model
 
 We select variable that seem correlated for this simple direct model.
 
@@ -426,7 +442,7 @@ kable(t1[[2]], row.names=FALSE, col.names="")%>%
 This model's Adjusted R2 is also .32 which suggests our model is performing perfectly well without the other variables. This makes the model a bit less pointlessly confusing. 
 
 
-### Model 2
+### Model 2 Log Transformation
 
 For this model we use the log adjusted values adding in the adjusted Caught Stealing. In addition to the previously present, but now adjusted:
 
@@ -450,7 +466,7 @@ kable(t2[[2]], row.names=FALSE, col.names="")%>%
 ```
 Adjusted-r2 did not improve overall as compared with model 1 and intercept is no longer significant in this model. The additional Caught Stealing variable is significant, but with the loss of a significant intercept it is a wash. This does not seem a preferred model because log transformations are complex to intuit, and it doesn't seem to offer a meaningful benefit.
 
-### Model 3
+### Model 3 BoxCox Transformation
 
 For the BoxCox transformed data set we will continue with the same variables as previously. 
 
@@ -470,7 +486,7 @@ kable(t3[[2]], row.names=FALSE, col.names="")%>%
 ```
 With boxcox transformation, intercept is now again significant but adjusted r-square dropped to .29. We have lost two variables to insignificance with Caught Stealing becoming particular meaningless. 
 
-### Model 4
+### Model 4 kNN Imputation
 
 With our log adjusted KNN we will take all 13 variables. 
 ```{r message=FALSE, output=F, echo=F, warning=FALSE}
@@ -496,13 +512,13 @@ Our model will be:
 $$
 TARGET_WINS = 154.048 + BATTING_H (0.05) - BATTING_2B (0.04) + BATTING_3B (0.10) + BATTING_BB (0.04) - BATTING_SO (0.02) + BASERUN_SB (12.89) - PITCHING_H (9.25) + PITCHING_HR (0.08) - PITCHING_BB (9.83) + PITCHING_SO (0.00) - FIELDING_E (46.98) - FIELDING_DP (0.14)
 $$
-
+\newpage
 
 ## Select Model
 
 As discussed we would prefer to select Model 4 because it not only improved adjusted r-square but the intercept also became significant which was not the case in model 3. In addition, the significance and directions of each variable's impact on TARGET_WINS mostly accords with the theoretical effect, and intuition. We found that knn imputation along with log transformation improved the model significantly in comparison with other techniques. It also shows that we cannot randomly just replace the missing values with mean or median. The analystm must check our models with different criteria to see which transformation techniques do well overall in terms of not only r-square but also we have to see if the result actually makes sense or not. At this point we are convinced about performance of model 4 but we'll take one step extra and double check. 
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, echo=F}
 # Checking the overall performance of model
 model_test <- lm(TARGET_WINS ~ BATTING_H + BATTING_2B + BATTING_3B + BATTING_BB + BATTING_SO + BASERUN_SB + PITCHING_H + PITCHING_HR + PITCHING_BB + PITCHING_SO + FIELDING_E + FIELDING_DP, data=train_knn_log)
 check_model(model_test)
@@ -510,7 +526,7 @@ check_model(model_test)
 Data looks normally distributed but looks like there are high collinearity among some of the variables as shown below which might be affect their significance or coefficients in final model. According to Jim Frost, multicollinearity does not influence the predictions, precision and goodness of fit. He adds that if primary goal is to make predictions then you do not have to understand the role of each independent variable.  There is some homoskedasticity in residuals as shown in graph 2 in second row. 
 
 
-```{r}
+```{r echo=F}
 # CHecking multicollinearity
 check_collinearity(model_test)
 
@@ -518,10 +534,16 @@ check_collinearity(model_test)
 model_performance(model_test)
 ```
 
-It seems that model 4's performance is almost consistent with other models in terms of collinearity and RMSE but adjusted r2 is comparatively better than others. The model, also makes intuitive sense. This suggests it should be selected. 
+It seems that model 4's performance is almost consistent with other models in terms of collinearity and RMSE but adjusted r2 is comparatively better than others. The model, also makes intuitive sense. This suggests it should be selected. Now that we have selected model 4 as a best among the others, let's move ahead and predict the target wins by predicting the test dataset on Model 4. 
+
+```{r}
+test_knn_log$TARGET_WINS <- round(predict(model_test, test_knn_log),0)
+test_knn_log %>% head() %>% kable() %>% kable_styling()
+```
 
 
 
+\newpage
 ## Appendix 1 R Code
 
 Since all the data is for the same team, we will remove the word 'TEAM' from all variables for ease of reading.
@@ -653,7 +675,7 @@ correlation %>%
   kable_styling()
 ```
 
-### Data Preparation
+***Data Preparation***
 
 First we will remove Batting_HBP (Hit by Pitch) which has 92% missing values. 
 
@@ -706,9 +728,10 @@ train %>%
 ```
 
 
-### Modeling
 
-### Model 1 - Basic Model
+***Modeling***
+
+***Model 1 - Basic Model***
 
 
 
@@ -740,7 +763,7 @@ test2[] <- lapply(test2, function(x) ifelse(is.na(x), median(x, na.rm=TRUE), x))
 #sapply(train2, function(x) skewness(x))
 ```
 
-### Model 2 - Log Transformation
+***Model 2 - Log Transformation***
 
 
 ```{r message=FALSE, output=F, echo=T, eval=F, warning=FALSE}
@@ -774,7 +797,7 @@ ggplot(melt(train_log), aes(x=value))+geom_density()+facet_wrap(~variable, scale
 ```
 
 
-### Model 3 - BoxCox Transformation
+***Model 3 - BoxCox Transformation***
 
 ```{r message=FALSE, output=F, echo=T, eval=F, warning=FALSE}
 # Converting tibble to df
@@ -794,9 +817,9 @@ ggplot(melt(train_bx_transformed), aes(x=value))+geom_density()+facet_wrap(~vari
 sapply(train_bx_transformed, function(x) skewness(x))
 ```
 
-### Model 4 - kNN Imputation on missing values
+***Model 4 - kNN Imputation on missing values***
 
-#### kNN Imputation
+*kNN Imputation*
 
 ```{r message=FALSE, output=F, echo=T, eval=F, warning=FALSE}
 set.seed(1100)
@@ -838,6 +861,10 @@ test_knn_log$BASERUN_SB <- log10(test_knn_log$BASERUN_SB + 1)
 sapply(train_knn_log, function(x) skewness(x))
 ggplot(melt(train_knn_log), aes(x=value))+geom_density()+facet_wrap(~variable, scales='free')
 ```
+
+
+
+
 ## References
 
 https://easystats.github.io/performance/
